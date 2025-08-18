@@ -1002,6 +1002,7 @@ public class BrokerController {
 
             @Override
             public PutMessageResult executeBeforePutMessage(MessageExt msg) {
+                // hn 延迟消息处理勾子函数
                 if (msg instanceof MessageExtBrokerInner) {
                     return HookUtils.handleScheduleMessage(BrokerController.this, (MessageExtBrokerInner) msg);
                 }

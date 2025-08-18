@@ -89,6 +89,7 @@ public class LocalMessageService implements MessageService {
         this.channelManager = channelManager;
     }
 
+    // hn local proxy Broker 与 Proxy 部署在同一进程：即 Proxy 直接内嵌 Broker，合并为一个进程
     @Override
     public CompletableFuture<List<SendResult>> sendMessage(ProxyContext ctx, AddressableMessageQueue messageQueue,
         List<Message> msgList, SendMessageRequestHeader requestHeader, long timeoutMillis) {

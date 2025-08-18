@@ -131,7 +131,9 @@ public class HookUtils {
         final int tranType = MessageSysFlag.getTransactionValue(msg.getSysFlag());
         if (tranType == MessageSysFlag.TRANSACTION_NOT_TYPE
             || tranType == MessageSysFlag.TRANSACTION_COMMIT_TYPE) {
+            // hn 这里判断有够乱的
             if (!isRolledTimerMessage(msg)) {
+                // hn ？
                 if (checkIfTimerMessage(msg)) {
                     if (!brokerController.getMessageStoreConfig().isTimerWheelEnable()) {
                         //wheel timer is not enabled, reject the message
@@ -169,6 +171,8 @@ public class HookUtils {
             return false;
             //return this.defaultMessageStore.getMessageStoreConfig().isTimerInterceptDelayLevel();
         }
+
+        // hn 这判断有够乱的啊 各种兼容
         //double check
         if (TimerMessageStore.TIMER_TOPIC.equals(msg.getTopic()) || null != msg.getProperty(MessageConst.PROPERTY_TIMER_OUT_MS)) {
             return false;
@@ -204,6 +208,7 @@ public class HookUtils {
                 deliverMs = deliverMs / timerPrecisionMs * timerPrecisionMs;
             }
 
+            // hn 限流 单个时间点不能有太多消息
             if (brokerController.getTimerMessageStore().isReject(deliverMs)) {
                 return new PutMessageResult(PutMessageStatus.WHEEL_TIMER_FLOW_CONTROL, null);
             }
@@ -211,7 +216,9 @@ public class HookUtils {
             MessageAccessor.putProperty(msg, MessageConst.PROPERTY_REAL_TOPIC, msg.getTopic());
             MessageAccessor.putProperty(msg, MessageConst.PROPERTY_REAL_QUEUE_ID, String.valueOf(msg.getQueueId()));
             msg.setPropertiesString(MessageDecoder.messageProperties2String(msg.getProperties()));
+            // hn 重写topic为内部topic rmq_sys_wheel_timer
             msg.setTopic(TimerMessageStore.TIMER_TOPIC);
+            // hn 单queue
             msg.setQueueId(0);
         } else if (null != msg.getProperty(MessageConst.PROPERTY_TIMER_DEL_UNIQKEY)) {
             return new PutMessageResult(PutMessageStatus.WHEEL_TIMER_MSG_ILLEGAL, null);
@@ -230,6 +237,7 @@ public class HookUtils {
         MessageAccessor.putProperty(msg, MessageConst.PROPERTY_REAL_QUEUE_ID, String.valueOf(msg.getQueueId()));
         msg.setPropertiesString(MessageDecoder.messageProperties2String(msg.getProperties()));
 
+        // hn 这也是个内部topic
         msg.setTopic(TopicValidator.RMQ_SYS_SCHEDULE_TOPIC);
         msg.setQueueId(ScheduleMessageService.delayLevel2QueueId(msg.getDelayTimeLevel()));
     }

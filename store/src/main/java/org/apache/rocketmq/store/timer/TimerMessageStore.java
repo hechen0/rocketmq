@@ -659,6 +659,7 @@ public class TimerMessageStore {
         if (!isRunningEnqueue()) {
             return false;
         }
+        // hn 内部topic rmq_sys_wheel_timer put到内部topic consumequeue 后构建延迟消息index
         ConsumeQueueInterface cq = this.messageStore.getConsumeQueue(TIMER_TOPIC, queueId);
         if (null == cq) {
             return false;
@@ -694,8 +695,10 @@ public class TimerMessageStore {
                         long delayedTime = Long.parseLong(msgExt.getProperty(TIMER_OUT_MS));
                         // use CQ offset, not offset in Message
                         msgExt.setQueueOffset(offset + i);
+                        // hn 构建延迟请求
                         TimerRequest timerRequest = new TimerRequest(offsetPy, sizePy, delayedTime, System.currentTimeMillis(), MAGIC_DEFAULT, msgExt);
                         // System.out.printf("build enqueue request, %s%n", timerRequest);
+                        // hn 写入队列中
                         while (!enqueuePutQueue.offer(timerRequest, 3, TimeUnit.SECONDS)) {
                             if (!isRunningEnqueue()) {
                                 return false;
@@ -738,6 +741,7 @@ public class TimerMessageStore {
         LOGGER.debug("Do enqueue [{}] [{}]", new Timestamp(delayedTime), messageExt);
         //copy the value first, avoid concurrent problem
         long tmpWriteTimeMs = currWriteTimeMs;
+        // hn 判断是否需要滚动重新写到 commit log 中
         boolean needRoll = delayedTime - tmpWriteTimeMs >= (long) timerRollWindowSlots * precisionMs;
         int magic = MAGIC_DEFAULT;
         if (needRoll) {
@@ -1311,6 +1315,7 @@ public class TimerMessageStore {
             TimerMessageStore.LOGGER.info(this.getServiceName() + " service start");
             while (!this.isStopped()) {
                 try {
+                    // hn 单queue？
                     if (!TimerMessageStore.this.enqueue(0)) {
                         waitForRunning(100L * precisionMs / 1000);
                     }
@@ -1444,6 +1449,7 @@ public class TimerMessageStore {
                         waitForRunning(1000);
                         continue;
                     }
+                    // hn 从时间轮
                     if (-1 == TimerMessageStore.this.dequeue()) {
                         waitForRunning(100L * precisionMs / 1000);
                     }

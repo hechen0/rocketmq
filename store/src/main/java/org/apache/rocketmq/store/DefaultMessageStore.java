@@ -548,6 +548,7 @@ public class DefaultMessageStore implements MessageStore {
     @Override
     public CompletableFuture<PutMessageResult> asyncPutMessage(MessageExtBrokerInner msg) {
 
+        // hn 写commitlog前预处理勾子函数
         for (PutMessageHook putMessageHook : putMessageHookList) {
             PutMessageResult handleResult = putMessageHook.executeBeforePutMessage(msg);
             if (handleResult != null) {
